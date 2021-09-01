@@ -15,7 +15,7 @@ from miio import (  # pylint: disable=import-error
 from miio.click_common import EnumType, command, format_output
 from miio.fan_common import FanException, OperationMode
 from miio.fan_miot import FanStatusMiot
-from .const import MODEL_FAN_FA1
+from .const import MODEL_FAN_FA1, MODEL_FAN_FB1
 import logging
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +69,8 @@ class FanFA1(FanMiot):
         lazy_discover: bool = True,
         model: str = MODEL_FAN_FA1,
     ) -> None:
+        if model in [MODEL_FAN_FA1, MODEL_FAN_FB1]:
+            model = MODEL_FAN_FA1
         if model not in MIOT_MAPPING:
             raise FanException("Invalid FanFA1 model: %s" % model)
 
