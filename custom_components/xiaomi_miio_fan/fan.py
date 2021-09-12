@@ -1073,7 +1073,7 @@ class XiaomiFanMiotFA1(XiaomiFanP5):
             self._available = True
             self._percentage = state.speed
             self._oscillate = state.oscillate
-            self._natural_mode = state.mode == FanOperationMode.Normal
+            self._natural_mode = state.mode == FanOperationModeMiot.Normal
             self._state = state.is_on
 
             for preset_mode, range in FAN_PRESET_MODES.items():
@@ -1320,14 +1320,16 @@ class XiaomiFan1C(XiaomiFan):
             self._retry = self._retry + 1
             if self._retry < self._retries:
                 _LOGGER.info(
-                    "Got exception while fetching the state: %s , _retry=%s",
+                    "%s Got exception while fetching the state: %s , _retry=%s",
+                    self.__class__.__name__,
                     ex,
                     self._retry,
                 )
             else:
                 self._available = False
                 _LOGGER.error(
-                    "Got exception while fetching the state: %s , _retry=%s",
+                    "%s Got exception while fetching the state: %s , _retry=%s",
+                    self.__class__.__name__,
                     ex,
                     self._retry,
                 )
