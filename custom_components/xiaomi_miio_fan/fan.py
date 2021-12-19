@@ -52,6 +52,7 @@ from miio.fan import (
     LedBrightness as FanLedBrightness,  # pylint: disable=import-error, import-error
 )
 from miio.fan import MoveDirection as FanMoveDirection
+from miio.fan_common import FanException
 from miio.fan_leshow import (
     OperationMode as FanLeshowOperationMode,  # pylint: disable=import-error, import-error
 )
@@ -559,8 +560,8 @@ class XiaomiGenericDevice(FanEntity):
         return self._available
 
     @property
-    def device_state_attributes(self):
-        """Return the state attributes of the device."""
+    def extra_state_attributes(self):
+        """Return the extra state attributes of the device."""
         return self._state_attrs
 
     @property
@@ -1126,7 +1127,6 @@ class XiaomiFanMiotFA1(XiaomiFanP5):
                 [{"piid": 4, "siid": 2, "did": "direction", "value": False}]
             )
 
-
 class XiaomiFanLeshow(XiaomiGenericDevice):
     """Representation of a Xiaomi Fan Leshow SS4."""
 
@@ -1455,7 +1455,6 @@ class XiaomiFanZA5(XiaomiFan):
         self._preset_modes = list(FAN_PRESET_MODES_ZA5)
         if preset_modes_override is not None:
             self._preset_modes = preset_modes_override
-
 
         self._state_attrs.update(
             {attribute: None for attribute in self._available_attributes}
