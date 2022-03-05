@@ -9,15 +9,10 @@ from typing import Any, Dict
 
 import click
 
-from miio import (  # pylint: disable=import-error
-    FanMiot
-)
 from miio.click_common import EnumType, command, format_output
 from miio.fan_common import FanException, OperationMode
-from miio.fan_miot import FanStatusMiot
+from miio.integrations.fan.dmaker.fan_miot import FanMiot, FanStatusMiot
 from .const import MODEL_FAN_FA1, MODEL_FAN_FB1
-import logging
-_LOGGER = logging.getLogger(__name__)
 
 
 # http://miot-spec.org/miot-spec-v2/instance?type=urn:miot-spec-v2:device:fan:0000A005:zhimi-fa1:1
@@ -60,6 +55,8 @@ class FanStatusMiotFA1(FanStatusMiot):
 
 class FanFA1(FanMiot):
     mapping = MIOT_MAPPING[MODEL_FAN_FA1]
+    _mappings = MIOT_MAPPING
+
     def __init__(
         self,
         ip: str = None,
@@ -74,8 +71,8 @@ class FanFA1(FanMiot):
         if model not in MIOT_MAPPING:
             raise FanException("Invalid FanFA1 model: %s" % model)
 
-        super().__init__(ip, token, start_id, debug, lazy_discover)
-        self.model = model
+        self._model = model
+        super().__init__(ip, token, start_id, debug, lazy_discover, model=model)
 
     @command(
         default_output=format_output(
@@ -109,7 +106,7 @@ class FanFA1(FanMiot):
         if angle not in SUPPORTED_ANGLES[self.model]:
             raise FanException(
                 "Unsupported angle. Supported values: "
-                + ", ".join("{0}".format(i) for i in SUPPORTED_ANGLES[self.model])
+                + ", ".join("{0}".format(i) for i in SUPPORTED_ANGLES[self._model])
             )
 
         return self.set_property("swing_mode_angle", angle)

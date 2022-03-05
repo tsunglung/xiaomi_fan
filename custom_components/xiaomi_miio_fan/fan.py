@@ -53,12 +53,10 @@ from miio.fan_common import (
     OperationMode as FanOperationMode,
     FanException,
 )
-from miio.fan import MoveDirection as FanMoveDirection
-from miio.fan_common import FanException
 from miio.integrations.fan.leshow.fan_leshow import (
     OperationMode as FanLeshowOperationMode,  # pylint: disable=import-error, import-error
 )
-from miio.fan_miot import OperationModeMiot as FanOperationModeMiot
+from miio.integrations.fan.dmaker.fan_miot import OperationModeMiot as FanOperationModeMiot
 from .const import (
     DEFAULT_NAME,
     DEFAULT_RETRIES,
@@ -527,7 +525,7 @@ class XiaomiGenericDevice(FanEntity):
         self._model = model
         self._unique_id = unique_id
         self._retry = 0
-        self._retries = retries
+        self._retries = int(retries)
         self._preset_modes_override = preset_modes_override
 
         self._available = False
@@ -1039,95 +1037,6 @@ class XiaomiFanMiot(XiaomiFanP5):
     """Representation of a Xiaomi Pedestal Fan P9, P10, P11, P18."""
     pass
 
-class XiaomiFanMiotFA1(XiaomiFanP5):
-    """Representation of a Xiaomi Pedestal Fan FA1, FB1."""
-
-    def __init__(self, name, device, model, unique_id, retries, preset_modes_override):
-        """Initialize the fan entity."""
-        super().__init__(name, device, model, unique_id, retries, preset_modes_override)
-
-        self._device_features = FEATURE_FLAGS_FAN_P5
-        self._available_attributes = AVAILABLE_ATTRIBUTES_FAN_P5
-        self._percentage = None
-        self._preset_modes = list(FAN_PRESET_MODES)
-        if preset_modes_override is not None:
-            self._preset_modes = preset_modes_override
-
-        self._preset_mode = None
-        self._oscillate = None
-        self._natural_mode = False
-        self._state_attrs = {ATTR_MODEL: self._model}
-        self._state_attrs.update(
-            {attribute: None for attribute in self._available_attributes}
-        )
-
-
-    async def async_update(self):
-        """Fetch state from the device."""
-        # On state change the device doesn't provide the new state immediately.
-        if self._skip_update:
-            self._skip_update = False
-            return
-
-        try:
-            state = await self.hass.async_add_job(self._device.status)
-            _LOGGER.debug("Got new state: %s", state)
-
-            self._available = True
-            self._percentage = state.speed
-            self._oscillate = state.oscillate
-            self._natural_mode = state.mode == FanOperationModeMiot.Normal
-            self._state = state.is_on
-
-            for preset_mode, range in FAN_PRESET_MODES.items():
-                if state.speed in range:
-                    self._preset_mode = preset_mode
-                    break
-
-            self._state_attrs.update(
-                {
-                    key: self._extract_value_from_attribute(state, value)
-                    for key, value in self._available_attributes.items()
-                }
-            )
-
-            self._retry = 0
-
-        except DeviceException as ex:
-            self._retry = self._retry + 1
-            if self._retry < self._retries:
-                _LOGGER.info(
-                    "%s Got exception while fetching the state: %s , _retry=%s",
-                    self.__class__.__name__,
-                    ex,
-                    self._retry,
-                )
-            else:
-                self._available = False
-                _LOGGER.error(
-                    "%s Got exception while fetching the state: %s , _retry=%s",
-                    self.__class__.__name__,
-                    ex,
-                    self._retry,
-                )
-
-    async def async_set_direction(self, direction: str) -> None:
-        """Set the direction of the fan."""
-        # Vertical Swing
-        if direction in ["forward", "right"]:
-            await self._try_command(
-                "Setting oscillate on of the miio device failed.",
-                self._device.send,
-                "set_properties",
-                [{"piid": 4, "siid": 2, "did": "direction", "value": True}]
-            )
-        else:
-            await self._try_command(
-                "Setting oscillate on of the miio device failed.",
-                self._device.send,
-                "set_properties",
-                [{"piid": 4, "siid": 2, "did": "direction", "value": False}]
-            )
 
 class XiaomiFanLeshow(XiaomiGenericDevice):
     """Representation of a Xiaomi Fan Leshow SS4."""
@@ -1879,3 +1788,94 @@ class FanZA5(MiotDevice):
     def set_rotate(self, direction: FanMoveDirection):
         """Rotate fan 7.5 degrees horizontally to given direction."""
         return self.set_property("set_move", direction.name.lower())
+
+
+class XiaomiFanMiotFA1(XiaomiFanMiot):
+    """Representation of a Xiaomi Pedestal Fan FA1, FB1."""
+
+    def __init__(self, name, device, model, unique_id, retries, preset_modes_override):
+        """Initialize the fan entity."""
+        super().__init__(name, device, model, unique_id, retries, preset_modes_override)
+
+        self._device_features = FEATURE_FLAGS_FAN_P5
+        self._available_attributes = AVAILABLE_ATTRIBUTES_FAN_P5
+        self._percentage = None
+        self._preset_modes = list(FAN_PRESET_MODES)
+        if preset_modes_override is not None:
+            self._preset_modes = preset_modes_override
+
+        self._preset_mode = None
+        self._oscillate = None
+        self._natural_mode = False
+        self._state_attrs = {ATTR_MODEL: self._model}
+        self._state_attrs.update(
+            {attribute: None for attribute in self._available_attributes}
+        )
+
+
+    async def async_update(self):
+        """Fetch state from the device."""
+        # On state change the device doesn't provide the new state immediately.
+        if self._skip_update:
+            self._skip_update = False
+            return
+
+        try:
+            state = await self.hass.async_add_job(self._device.status)
+            _LOGGER.debug("Got new state: %s", state)
+
+            self._available = True
+            self._percentage = state.speed
+            self._oscillate = state.oscillate
+            self._natural_mode = state.mode == FanOperationModeMiot.Normal
+            self._state = state.is_on
+
+            for preset_mode, range in FAN_PRESET_MODES.items():
+                if state.speed in range:
+                    self._preset_mode = preset_mode
+                    break
+
+            self._state_attrs.update(
+                {
+                    key: self._extract_value_from_attribute(state, value)
+                    for key, value in self._available_attributes.items()
+                }
+            )
+
+            self._retry = 0
+
+        except DeviceException as ex:
+            self._retry = self._retry + 1
+            if self._retry < self._retries:
+                _LOGGER.info(
+                    "%s Got exception while fetching the state: %s , _retry=%s",
+                    self.__class__.__name__,
+                    ex,
+                    self._retry,
+                )
+            else:
+                self._available = False
+                _LOGGER.error(
+                    "%s Got exception while fetching the state: %s , _retry=%s",
+                    self.__class__.__name__,
+                    ex,
+                    self._retry,
+                )
+
+    async def async_set_direction(self, direction: str) -> None:
+        """Set the direction of the fan."""
+        # Vertical Swing
+        if direction in ["forward", "right"]:
+            await self._try_command(
+                "Setting oscillate on of the miio device failed.",
+                self._device.send,
+                "set_properties",
+                [{"piid": 4, "siid": 2, "did": "direction", "value": True}]
+            )
+        else:
+            await self._try_command(
+                "Setting oscillate on of the miio device failed.",
+                self._device.send,
+                "set_properties",
+                [{"piid": 4, "siid": 2, "did": "direction", "value": False}]
+            )
