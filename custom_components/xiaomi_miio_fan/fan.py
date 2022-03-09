@@ -42,9 +42,7 @@ from miio import (  # pylint: disable=import-error
     Fan1C,
     FanLeshow,
     FanP5,
-    FanP9,
-    FanP10,
-    FanP11,
+    FanMiot
 )
 from miio.miot_device import MiotDevice, DeviceStatus
 from miio.fan_common import (
@@ -434,17 +432,17 @@ async def async_setup_entry(hass, config, async_add_devices, discovery_info=None
             name, fan, model, unique_id, retries, preset_modes_override
         )
     elif model == MODEL_FAN_P9:
-        fan = FanP9(host, token, model=model)
+        fan = FanMiot(host, token, model=model)
         device = XiaomiFanMiot(
             name, fan, model, unique_id, retries, preset_modes_override
         )
     elif model in [MODEL_FAN_P10, MODEL_FAN_P18]:
-        fan = FanP10(host, token, model=MODEL_FAN_P10)
+        fan = FanMiot(host, token, model=MODEL_FAN_P10)
         device = XiaomiFanMiot(
             name, fan, model, unique_id, retries, preset_modes_override
         )
     elif model in [MODEL_FAN_P11, MODEL_FAN_P15]:
-        fan = FanP11(host, token, model=MODEL_FAN_P11)
+        fan = FanMiot(host, token, model=MODEL_FAN_P11)
         device = XiaomiFanMiot(
             name, fan, model, unique_id, retries, preset_modes_override
         )
